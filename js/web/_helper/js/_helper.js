@@ -1,16 +1,15 @@
 /*
+ * *************************************************************************************
  *
- *  * **************************************************************************************
- *  * Copyright (C) 2022 FoE-Helper team - All Rights Reserved
- *  * You may use, distribute and modify this code under the
- *  * terms of the AGPL license.
- *  *
- *  * See file LICENSE.md or go to
- *  * https://github.com/mainIine/foe-helfer-extension/blob/master/LICENSE.md
- *  * for full license details.
- *  *
- *  * **************************************************************************************
+ * Copyright (C) 2026 FoE-Helper team - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the AGPL license.
  *
+ * See file LICENSE.md or go to
+ * https://github.com/mainIine/foe-helfer-extension/blob/master/LICENSE.md
+ * for full license details.
+ *
+ * *************************************************************************************
  */
 
 /*
@@ -39,6 +38,7 @@ helper.str = {
 	 * <a href="/param">@param</a> {string} [textToCopy] Source string
 	 */
 	copyToClipboard: async(textToCopy) => {
+		if (!document.hasFocus()) return;
 		if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
 			return navigator.clipboard.writeText(textToCopy);
 		} else {
@@ -61,7 +61,11 @@ helper.str = {
 		copyFrom.select();
 		document.execCommand('copy');
 		copyFrom.remove();
-    },
+	},
+
+	cleanup: (textToCleanup) => {
+		return textToCleanup.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/[\W_ ]+/g, '')
+	},
 };
 
 helper.arr = {
@@ -135,6 +139,26 @@ helper.permutations = (()=>{
 	return permutations;
 })();
 
+helper.sounds = {
+	ping: new Audio(extUrl + 'vendor/sounds/ping.mp3'),
+    message: new Audio(extUrl + 'vendor/sounds/message.mp3'),
+	play: (sound) => {
+		if (Settings.GetSetting('EnableSound')) helper.sounds[sound].play();
+	},
+};
+
+helper.preloader = { 
+	show: function(id) {
+		$(id+' .loading-data').remove();
+		$(id).append('<div class="loading-data"><div class="loadericon"></div></div>');
+	},
+
+	hide: function(id) {
+		$(id+' .loading-data').fadeOut(600, 'easeInCubic', function () {
+			$(this).remove();
+		})
+	}
+};
 
 let HTML = {
 
@@ -171,21 +195,23 @@ let HTML = {
 			div = $('<div />').attr('id', args['id']).attr('class', 'window-box open').append(head).append(body).hide(),
 			cords = localStorage.getItem(args['id'] + 'Cords');
 		
-		//close button
+		// close button
 		let close = $('<span />').attr('id', args['id'] + 'close').addClass('window-close');
 
 		if (args['auto_close'] !== false) {
 			buttons.append(close);
 		}
-
-		// Minimierenbutton
+		if (args["active_maps"] && args["active_maps"].length > 0) {
+			let maps = args["active_maps"].replace(" ","").split(",").map(x => "ActiveOn"+x);
+			div.addClass("MapActivityCheck "+maps.join(" "));
+		}
+		// minimize
 		if (args['minimize']) {
 			let min = $('<span />').addClass('window-minimize');
 			buttons.prepend(min);
 		}
 
-		// insert a wrench icon
-		// set a click event on it
+		// insert a wrench icon, set a click event on it
 		if (args['settings']) {
 			let set = $('<span />').addClass('window-settings').attr('id', `${args['id']}-settings`);
 			buttons.prepend(set);
@@ -196,7 +222,7 @@ let HTML = {
 		}
 
 		if (args['popout']) {
-			let set = $('<span />').addClass('window-settings').attr('id', `${args['id']}-popout`);
+			let set = $('<span />').addClass('window-popout').attr('id', `${args['id']}-popout`).attr('title', i18n('PopUp.TooltipButton'));
 			buttons.prepend(set);
 
 			if (typeof args['popout'] !== 'boolean') {
@@ -213,26 +239,38 @@ let HTML = {
 			}
 		}
 
-		// Lautsprecher für Töne
+		// Sounds (was in the calculators)
 		if (args['speaker']) {
 			let spk = $('<span />').addClass('window-speaker').attr('id', args['speaker']);
 			buttons.prepend(spk);
 
 			$('#' + args['speaker']).addClass(localStorage.getItem(args['speaker']));
 		}
+		
+		// Position von beweglichen Fenstern initialisieren und Verhindern, dass Fenster außerhalb plaziert werden
+		if (args.dragdrop) div.css({"--x": "0px","--y": "0px","left":"calc(min(max(50vw + var(--x),0px),100vw - 60px))","top":"calc(min(max(50vh + var(--y),0px), 100vh - 60px))"});
 
-		// es gibt gespeicherte Koordinaten
+		// load saved coords
 		if (cords) {
-			let c = cords.split('|');
-
+			c = null
+			if (cords.includes('|')) {
+				cords = cords.split('|') 
+				cords = mouseActions.calcCoords([Number(cords[1]), Number(cords[0])], "Center")
+			} else {
+				cords = JSON.parse(cords)
+			}
 			// Verhindere, dass Fenster außerhalb plaziert werden
-			div.offset({ top: Math.min(parseInt(c[0]), window.innerHeight - 50), left: Math.min(parseInt(c[1]), window.innerWidth - 100) });
+			div.css({"--x": cords[0]+"px","--y": cords[1]+"px"});
 		}
 
-		// Ein Link zu einer Seite
+		// link to documentation
 		if (args['ask']) {
 			let ask = $('<span />').addClass('window-ask').attr('data-url', args['ask']);
 			buttons.prepend(ask);
+		}
+
+		if (args['class']) {
+			div.addClass(args['class']);
 		}
 
 		head.append(buttons);
@@ -245,6 +283,9 @@ let HTML = {
 				HTML.BringToFront(div);
 			}, 300);
 
+			$("#"+args['id'] + 'Header .box-buttons span').on("pointerdown",(e)=>{
+				e.stopPropagation()
+			})
 
 			if (args['auto_close']) {
 				$(`#${args.id}`).on('click', `#${args['id']}close`, function () {
@@ -254,6 +295,8 @@ let HTML = {
 
 					$('#' + args['id']).fadeToggle('fast', function () {
 						$(this).remove();
+						Tooltips.deactivate()
+						$("div.tooltip").remove();
 					});
 				});
 			}
@@ -395,7 +438,8 @@ let HTML = {
 	MinimizeBeforeBattle: () => {
 		let HideHelperDuringBattle = localStorage.getItem('HideHelperDuringBattle');
 		let MenuSetting = localStorage.getItem('SelectedMenu');
-		if (HideHelperDuringBattle == 'true' && MenuSetting == 'Box' && $('body').find("#menu_box").hasClass('open')) {
+
+		if (HideHelperDuringBattle === 'true' && MenuSetting === 'Box' && $('body').find("#menu_box").hasClass('open')) {
 			HTML.Minimize();
 			HTML.boxWasMinimizedForBattle = true;
 		}
@@ -421,9 +465,9 @@ let HTML = {
 
 		document.getElementById(el.id + "Header").removeEventListener("pointerdown", dragMouseDown);
 
-		let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0, top = 0, left = 0, id;			
+		let xStartM=0, yStartM=0, xStartEl=0, yStartEl=0;			
 
-		id = el.id;
+		let id = el.id;
 
 		if (document.getElementById(el.id + "Header")) {
 			document.getElementById(el.id + "Header").onpointerdown = dragMouseDown;
@@ -435,8 +479,10 @@ let HTML = {
 			e = e || window.event;
 			e.preventDefault();
 
-			pos3 = e.clientX;
-			pos4 = e.clientY;
+			xStartM = e.clientX;
+			yStartM = e.clientY;
+			xStartEl = el.offsetLeft;
+			yStartEl = el.offsetTop;
 
 			document.onpointerup = closeDragElement;
 			document.onpointermove = elementDrag;
@@ -446,40 +492,13 @@ let HTML = {
 			e = e || window.event;
 			e.preventDefault();
 
-			pos1 = pos3 - e.clientX;
-			pos2 = pos4 - e.clientY;
-			pos3 = e.clientX;
-			pos4 = e.clientY;
+			let cords = mouseActions.calcCoords([(xStartEl - xStartM + e.clientX), yStartEl - yStartM + e.clientY], "Center");
+			//let cords = mouseActions.calcCoords([e.clientX, e.clientY], "Center");
 
-			top = (el.offsetTop - pos2);
-			left = (el.offsetLeft - pos1);
-
-			let noOverflow = $('.overflowHidden').length > 0;
-
-			// Schutz gegen "zu Hoch geschoben"
-			if (top < 0) {
-				top = 0;
-			}
-			// Schutz gegen "zu weit links geschoben"
-			if (left < Math.min(0,  120 - el.offsetWidth)) {
-				left = Math.min(0,  120 - el.offsetWidth);
-			}
-			// Schutz gegen "zu weit rechts geschoben"
-			if (left > Math.max(window.innerWidth - 80, window.innerWidth-el.offsetWidth) && noOverflow) {
-				left = Math.max(window.innerWidth - 80, window.innerWidth-el.offsetWidth);
-			}
-			// Schutz gegen "zu weit runter geschoben"
-			if (top > Math.max(window.innerHeight - 80, window.innerHeight-el.offsetHeight-20) && noOverflow) {
-				top = Math.max(window.innerHeight - 80, window.innerHeight-el.offsetHeight-20);
-			}
-
-			el.style.top = top + "px";
-			el.style.left = left + "px";
+			$(el).css({"--x":cords[0]+"px","--y":cords[1]+"px"})
 
 			if (save === true) {
-				let cords = top + '|' + left;
-
-				localStorage.setItem(id + 'Cords', cords);
+				localStorage.setItem(id + 'Cords', JSON.stringify(cords));
 			}
 		}
 
@@ -488,8 +507,8 @@ let HTML = {
 			document.onpointermove = null;
 
 			// is there a callback function after drag&drop
-			if (HTML.customFunctions[id]) {
-				new Function(`${HTML.customFunctions[id]}`)();
+			if (typeof HTML.customFunctions[id] === 'function') {
+				HTML.customFunctions[id]();
 			}
 		}
 	},
@@ -589,25 +608,31 @@ let HTML = {
 		$(`#${id}`).append(box);
 
 		setTimeout(() => {
-			new Function(`${HTML.customFunctions[id + 'Settings']}`)();
+			if (typeof HTML.customFunctions[id + 'Settings'] === 'function') {
+				HTML.customFunctions[id + 'Settings']();
+			}
 		}, 100);
 	},
 
 
 	PopOutBox: (id) => {
-		new Function(`${HTML.customFunctions[id + 'PopOut']}`)();
+		if (typeof HTML.customFunctions[id + 'PopOut'] === 'function') {
+			HTML.customFunctions[id + 'PopOut']();
+		}
 	},
 
 
 	MapBox: (id) => {
 		setTimeout(() => {
-			new Function(`${HTML.customFunctions[id + 'Map']}`)();
+			if (typeof HTML.customFunctions[id + 'Map'] === 'function') {
+				HTML.customFunctions[id + 'Map']();
+			}
 		}, 100);
 	},
 
 
 	/**
-	 * Zweiter Klick auf das Menü-Icon schliesst eine ggf. offene Box
+	 * A second click on the menu icon closes any open box
 	 *
 	 * @param cssid
 	 * @returns {boolean}
@@ -660,7 +685,26 @@ let HTML = {
 		if (number === 0) {
 			return '-';
 		} else {
+			if (typeof number !== 'number' && isNaN(Number(number))) return "" + number;
 			return Number(number).toLocaleString(i18n('Local'));
+		}
+	},
+
+
+	/**
+	 * Formatiert Zahlen oder gibt = 0 einen "-" aus
+	 *
+	 * @param number
+	 * @returns {*}
+	 */
+	FormatNumberShort: (number,replaceZero=true,language='Local') => {
+		if (number === 0 && replaceZero) {
+			return '-';
+		} else {
+			return Intl.NumberFormat(i18n(language), {
+				notation: "compact",
+				maximumFractionDigits: 1
+			  }).format(Number(number));
 		}
 	},
 
@@ -703,7 +747,7 @@ let HTML = {
 
 
 	/**
-	 * Ersetzt Variablen in einem String mit Argumenten
+	 * Replaces variables in a string with arguments
 	 *
 	 * @param string
 	 * @param args
@@ -727,12 +771,11 @@ let HTML = {
 
 
 	/**
-	* Ersetzt " durch &quot;
-	*
-	* @param string
-	* @param args
-	* @returns {*}
-	*/
+	 * Replaces " with &quot;
+	 *
+	 * @param string
+	 * @returns {*}
+	 */
 	i18nTooltip: (string) => {
 		return string.replace(/"/g, "&quot;")
 	},
@@ -808,8 +851,9 @@ let HTML = {
 			text: d['text'],
 			icon: d['type'],
 			hideAfter: d['hideAfter'],
+			allowToastClose:  d['allowToastClose'],
 			position: Settings.GetSetting('NotificationsPosition', true),
-			extraClass: localStorage.getItem('SelectedMenu') || 'bottombar',
+			extraClass: localStorage.getItem('SelectedMenu') || 'RightBar',
 			stack: localStorage.getItem('NotificationStack') || 4
 		});
 	},
@@ -849,8 +893,13 @@ let HTML = {
 
 		$(Table).each(function () {
 			let ColumnNames = [];
-
-			$(Table).find('th').each(function () {
+			let index = 0;
+			let findBy = "th"
+			if ($(Table).find('.exportheader th').length > 0){
+				findBy = '.exportheader th';
+			}
+			
+			$(Table).find(findBy).each(function () {
 				let ColumnCount = $(this).attr('colspan');
 				if (ColumnCount) {
 					ColumnCount = ColumnCount - 0;
@@ -860,11 +909,13 @@ let HTML = {
                 }
 
 				if (ColumnCount === 1) {
-					ColumnNames.push($(this).attr('columnname'))
+					ColumnNames[index] = $(this).data('export')
+					index++;
 				}
 				else {
 					for (let i = 0; i < ColumnCount; i++) {
-						ColumnNames.push($(this).attr('columnname' + (i + 1)));
+						ColumnNames[index] = $(this).data('export' + (i + 1));
+						index++;
 					}
                 }
 			});
@@ -925,7 +976,7 @@ let HTML = {
 						let CurrentCell = DataRow[ValidColumnNames[j]];
 						if (CurrentCell !== undefined) {
 							if ($.isNumeric(CurrentCell)) {
-								CurrentCells.push(Number(CurrentCell).toLocaleString(i18n('Local')));
+								CurrentCells.push(Number(CurrentCell).toLocaleString(i18n('Local'),{useGrouping:false}));
 							}
 							else {
 								CurrentCells.push(CurrentCell);
@@ -945,7 +996,27 @@ let HTML = {
 
 			// with UTF-8 BOM
 			let BlobData = new Blob(["\uFEFF" + FileContent], { type: "application/octet-binary;charset=ANSI" });
-			MainParser.ExportFile(BlobData, FileName + '.' + Format);
+			MainParser.ExportFile(BlobData, FileName + '-' + moment().format('YYYY-MM-DD') + '.' + Format);
+		});
+	},
+
+
+	FilterTable: (selector) => {
+		$(selector).on('click', (e) => {e.stopPropagation()})
+		$(selector).on('keyup', function (e) {
+			let filter = $(this).val().toLowerCase()
+			let table = $(this).parents("table")
+			if (filter.length >= 2) {
+				$("tbody tr", table).hide()
+				$("tbody tr", table).filter(function() {
+					let foundText = ($(this).text().toLowerCase().indexOf(filter) > -1)
+					if (foundText)
+						$(this).show()
+				});
+			}
+			else {
+				$("tbody tr", table).show()
+			}
 		});
 	},
 
@@ -990,3 +1061,10 @@ let HTML = {
         }
 	},
 };
+
+FoEproxy.addFoeHelperHandler('ActiveMapUpdated', () => {
+	$('.MapActivityCheck:not(.ActiveOn'+ActiveMap+")").remove();
+	$('.MapActivityHide').hide();
+	$('.MapActivityHide.ActiveOn'+ActiveMap).show();
+
+});

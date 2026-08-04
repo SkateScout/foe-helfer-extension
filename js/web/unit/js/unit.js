@@ -1,6 +1,6 @@
 /*
  * **************************************************************************************
- * Copyright (C) 2022 FoE-Helper team - All Rights Reserved
+ * Copyright (C) 2026 FoE-Helper team - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the AGPL license.
  *
@@ -91,11 +91,11 @@ let Unit = {
 				dragdrop: true,
 				resize: true,
 				minimize: true,
-				settings: 'Unit.ShowSettings()'
+				settings: () => Unit.ShowSettings()
 			};
 
 			HTML.Box(args);
-			moment.locale(i18n('Local'));
+			//moment.locale(18n('Local'));
 
 		} else {
 			HTML.CloseOpenBox('UnitOverview');
@@ -106,14 +106,18 @@ let Unit = {
 
 
 	PrepareCoords: ()=> {
-		if( $('#unit-css-block').length > 0 ){
+		if( $('#unit-css-block').length > 0){
+			return;
+		}
+
+		if(Object.keys(Unit.CoordsRaw).length === 0){
 			return;
 		}
 
 		let s = [],
 			r = Unit.CoordsRaw.image.slice(0, Unit.CoordsRaw.image.lastIndexOf('_')) + '_';
 
-		s.push(`.unit_icon{background: transparent url('${srcLinks.get("/shared/unit_portraits/armyuniticons_50x50/armyuniticons_50x50_0.png", true)}') top left no-repeat;background-size:calc(${Unit.CoordsRaw.size.w}px*var(--unit_scale)) calc(${Unit.CoordsRaw.size.h}px*var(--unit_scale));display:inline-block;width:calc(50px*var(--unit_scale));height:calc(50px*var(--unit_scale));zoom:0.75}`);
+		s.push(`:root {--unit_scale: 3/5;}.unit_icon{background: transparent url('${srcLinks.get("/shared/unit_portraits/armyuniticons_50x50/armyuniticons_50x50_0.png", true)}') top left no-repeat;background-size:calc(${Unit.CoordsRaw.size.w}px*var(--unit_scale)) calc(${Unit.CoordsRaw.size.h}px*var(--unit_scale));display:inline-block;width:calc(50px*var(--unit_scale));height:calc(50px*var(--unit_scale));zoom:0.75}`);
 
 		for(let i in Unit.CoordsRaw.frames)
 		{
@@ -130,7 +134,7 @@ let Unit = {
 
 		let sheet = document.createElement('style')
 		sheet.id = 'unit-css-block';
-		sheet.innerHTML = s.join('');
+		sheet.textContent = s.join('');
 		document.head.appendChild(sheet);
 	},
 
@@ -821,12 +825,12 @@ let Unit = {
 		let h = [];
 
 		h.push(`<p>${i18n('Boxes.Units.PictogramScalingTitle')}
-					<button class="btn btn-default btn-tight btn-set-value" data-value="-1">&lt;</button>
+					<button class="btn btn-slim btn-set-value" data-value="-1">&lt;</button>
 					<input type="number" id="pictogramScaling" step="1" min="1" max="4" placeholder="1-4" required value="${Unit.Settings.pictogramScaling}" title="${HTML.i18nTooltip(i18n('Boxes.Units.PictogramScalingDesc'))}">
-					<button class="btn btn-default btn-tight btn-set-value" data-value="1">&gt;</button>
+					<button class="btn btn-slim btn-set-value" data-value="1">&gt;</button>
 					<span class="validity"></span>
 				</p>`);
-		h.push(`<p><button onclick="Unit.SaveSettings()" id="unit-save-settings" class="btn btn-default" style="width:100%">${i18n('Boxes.Settings.Save')}</button></p>`);
+		h.push(`<p><button onclick="Unit.SaveSettings()" id="unit-save-settings" class="btn" style="width:100%">${i18n('Boxes.Settings.Save')}</button></p>`);
 
 		$('#UnitOverviewSettingsBox').html(h.join(''));
 		

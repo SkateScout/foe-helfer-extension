@@ -1,6 +1,6 @@
 /*
  * **************************************************************************************
- * Copyright (C) 2022 FoE-Helper team - All Rights Reserved
+ * Copyright (C) 2026 FoE-Helper team - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the AGPL license.
  *
@@ -25,13 +25,13 @@ let _menu_box = {
 	 * Create a html box and put it into the DOM
 	 */
 	Show: () => {
-        moment.locale(i18n('Local'));
+        //moment.locale(18n('Local'));
 
 		HTML.Box({
 			id: 'menu_box',
 			title: i18n('Global.BoxTitle'),
 			onlyTitle: true,
-			dragdrop: '_menu_box.CheckButtons()',
+			dragdrop: () => _menu_box.CheckButtons(),
 			minimize: true,
 			resize: true,
 			auto_close: false

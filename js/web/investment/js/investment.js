@@ -1,6 +1,6 @@
 /*
  * **************************************************************************************
- * Copyright (C) 2022 FoE-Helper team - All Rights Reserved
+ * Copyright (C) 2026 FoE-Helper team - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the AGPL license.
  *
@@ -60,7 +60,7 @@ let Investment = {
 				dragdrop: true,
 				resize: true,
 				minimize: true,
-				settings: 'Investment.ShowInvestmentSettings()'
+				settings: () => Investment.ShowInvestmentSettings()
 			});
 
 			HTML.AddCssFile('investment');
@@ -166,11 +166,11 @@ let Investment = {
 		// Table for history
 
 		h.push('<table id="InvestmentTable" class="foe-table">');
-		h.push('<thead>' +
+		h.push('<thead class="sticky">' +
 			'<tr class="sorter-header">' +
 			'<th class="case-sensitive" data-type="invest-group">' + i18n('Boxes.Investment.Overview.Player') + '</th>' +
 			'<th class="case-sensitive" data-type="invest-group">' + i18n('Boxes.Investment.Overview.Building') + '</th>' +
-			'<th class="is-number text-center" data-type="invest-group"></th>');
+			'<th class="is-number text-center no-sort" data-type="invest-group"></th>');
 
 		if (showEntryDate)
 		{
@@ -203,7 +203,7 @@ let Investment = {
 			h.push('<th class="is-number text-center" data-type="invest-group"><span class="blueprints" title="' + HTML.i18nTooltip(i18n('Boxes.Investment.Overview.Blueprints')) + '"></span></th>');
 		}
 		
-		h.push('<th></th></tr></thead><tbody class="invest-group">');
+		h.push('<th class="no-sort"></th></tr></thead><tbody class="invest-group">');
 
 		let CurrentGB = await IndexDB.db.investhistory.reverse().toArray();
 
@@ -267,8 +267,8 @@ let Investment = {
 			hiddenClass=(showHiddenGb && isHidden) ? ' ishidden' : (isHidden) ? ' ishidden hide' : '';
 
 			h.push(`<tr id="invhist${x}" data-id="${contribution['id']}" data-max-progress="${contribution['max_progress']}" data-detail='${JSON.stringify(history)}' class="${hasFpHistoryClass}${newerClass}${hiddenClass}">` +
-				`<td class="case-sensitive" data-text="${contribution['playerName'].toLowerCase().replace(/[\W_ ]+/g, "")}"><img style="max-width: 22px" src="${srcLinks.GetPortrait(contribution['Avatar'])}" alt="${contribution['playerName']}"> ${MainParser.GetPlayerLink(contribution['playerId'], contribution['playerName'])}</td>`);
-			h.push('<td class="case-sensitive" data-text="' + contribution['gbname'].toLowerCase().replace(/[\W_ ]+/g, "") + '">' + contribution['gbname'] + ' (' + contribution['level'] + ')</td>');
+				`<td class="case-sensitive" data-text="${helper.str.cleanup(contribution['playerName'])}"><img style="max-width: 22px" src="${srcLinks.GetPortrait(contribution['Avatar'])}" alt="${contribution['playerName']}"> ${MainParser.GetPlayerLink(contribution['playerId'], contribution['playerName'])}</td>`);
+			h.push('<td class="case-sensitive" data-text="' + helper.str.cleanup(contribution['gbname']) + '">' + contribution['gbname'] + ' (' + contribution['level'] + ')</td>');
 			h.push(`<td class="is-number text-center invest-tooltip" data-number="${isHidden}" title="${i18n('Boxes.Investment.Overview.HideGB')}"><span class="hideicon ishidden-${isHidden?'on':'off'}"></span></td>`);
 			
 			if (showEntryDate) {
@@ -410,15 +410,15 @@ let Investment = {
 			removeUnsafeCalc = (InvestmentSettings && InvestmentSettings.removeUnsafeCalc !== undefined) ? InvestmentSettings.removeUnsafeCalc : 0,
 			showinvestmentsautomatically = Settings.GetSetting('ShowInvestments');
 
-		c.push(`<p>${i18n('Boxes.Investment.Overview.AdditionalColumns')}:</p><p><input id="showentrydate" name="showentrydate" value="1" type="checkbox" ${(showEntryDate === 1) ? ' checked="checked"':''} /> <label for="showentrydate">${i18n('Boxes.Investment.Overview.SettingsEntryTime')}</label></p>`);
-		c.push(`<p><input id="showinvestmentincreasedate" name="showinvestmentincreasedate" value="1" type="checkbox" ${(showInvestmentIncreaseDate === 1) ? ' checked="checked"':''} /> <label for="showinvestmentincreasedate">${i18n('Boxes.Investment.Overview.DateOfIncrease')}</label></p>`);
-		c.push(`<p><input id="showrestfp" name="showrestfp" value="1" type="checkbox" ${(showRestFp === 1) ? ' checked="checked"':''} /> <label for="showrestfp">${i18n('Boxes.Investment.Overview.SettingsRestFP')}</label></p>`);
-		c.push(`<p><input id="showmedals" name="showmedals" value="1" type="checkbox" ${(showMedals === 1) ? ' checked="checked"':''} /> <label for="showmedals">${i18n('Boxes.Investment.Overview.Medals')}</label></p>`);
-		c.push(`<p><input id="showblueprints" name="showblueprints" value="1" type="checkbox" ${(showBlueprints === 1) ? ' checked="checked"':''} /> <label for="showblueprints">${i18n('Boxes.Investment.Overview.Blueprints')}</label></p>`);
-		c.push(`<p><hr /><input id="showhiddengb" name="showhiddengb" value="1" type="checkbox" ${(showHiddenGb === 1) ? ' checked="checked"':''} /> <label for="showhiddengb">${i18n('Boxes.Investment.Overview.SettingsHiddenGB')}</label></p>`);
-		c.push(`<p><input id="removeunsafecalc" name="removeunsafecalc" value="1" type="checkbox" ${(removeUnsafeCalc === 1) ? ' checked="checked"':''} /> <label for="removeunsafecalc">${i18n('Boxes.Investment.Overview.SettingsUnsafeCalc')}</label></p>`);
-		c.push(`<p><hr /><input id="showinvestmentsautomatically" name="showinvestmentsautomatically" value="1" type="checkbox" ${(showinvestmentsautomatically === true) ? ' checked="checked"':''} /> <label for="showinvestmentsautomatically">${i18n('Boxes.Settings.Autostart')}</label></p>`);
-		c.push(`<p><button id="save-Investment-settings" class="btn btn-default" style="width:100%" onclick="Investment.SettingsSaveValues()">${i18n('Boxes.Investment.Overview.SettingsSave')}</button></p>`);
+		c.push(`<p>${i18n('Boxes.Investment.Overview.AdditionalColumns')}:</p><input id="showentrydate" name="showentrydate" value="1" type="checkbox" ${(showEntryDate === 1) ? ' checked="checked"':''} /> <label for="showentrydate">${i18n('Boxes.Investment.Overview.SettingsEntryTime')}</label><br>`);
+		c.push(`<input id="showinvestmentincreasedate" name="showinvestmentincreasedate" value="1" type="checkbox" ${(showInvestmentIncreaseDate === 1) ? ' checked="checked"':''} /> <label for="showinvestmentincreasedate">${i18n('Boxes.Investment.Overview.DateOfIncrease')}</label><br>`);
+		c.push(`<input id="showrestfp" name="showrestfp" value="1" type="checkbox" ${(showRestFp === 1) ? ' checked="checked"':''} /> <label for="showrestfp">${i18n('Boxes.Investment.Overview.SettingsRestFP')}</label><br>`);
+		c.push(`<input id="showmedals" name="showmedals" value="1" type="checkbox" ${(showMedals === 1) ? ' checked="checked"':''} /> <label for="showmedals">${i18n('Boxes.Investment.Overview.Medals')}</label><br>`);
+		c.push(`<input id="showblueprints" name="showblueprints" value="1" type="checkbox" ${(showBlueprints === 1) ? ' checked="checked"':''} /> <label for="showblueprints">${i18n('Boxes.Investment.Overview.Blueprints')}</label><br>`);
+		c.push(`<hr /><input id="showhiddengb" name="showhiddengb" value="1" type="checkbox" ${(showHiddenGb === 1) ? ' checked="checked"':''} /> <label for="showhiddengb">${i18n('Boxes.Investment.Overview.SettingsHiddenGB')}</label><br>`);
+		c.push(`<input id="removeunsafecalc" name="removeunsafecalc" value="1" type="checkbox" ${(removeUnsafeCalc === 1) ? ' checked="checked"':''} /> <label for="removeunsafecalc">${i18n('Boxes.Investment.Overview.SettingsUnsafeCalc')}</label>`);
+		c.push(`<hr /><input id="showinvestmentsautomatically" name="showinvestmentsautomatically" value="1" type="checkbox" ${(showinvestmentsautomatically === true) ? ' checked="checked"':''} /> <label for="showinvestmentsautomatically">${i18n('Boxes.Settings.Autostart')}</label>`);
+		c.push(`<p><button id="save-Investment-settings" class="btn" style="width:100%" onclick="Investment.SettingsSaveValues()">${i18n('Boxes.Investment.Overview.SettingsSave')}</button></p>`);
 
 		$('#InvestmentSettingsBox').html(c.join(''));
 	},
@@ -653,6 +653,7 @@ let Investment = {
 
 	},
 
+
 	ToggleHidden: () => {
 
 		let value = JSON.parse(localStorage.getItem('InvestmentSettings') || '{}');
@@ -663,6 +664,7 @@ let Investment = {
 
 		Investment.Show();
 	},
+
 
 	SettingsSaveValues: () => {
 

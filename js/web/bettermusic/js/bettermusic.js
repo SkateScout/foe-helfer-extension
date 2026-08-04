@@ -1,7 +1,7 @@
 
 /*
  * **************************************************************************************
- * Copyright (C) 2022 FoE-Helper team - All Rights Reserved
+ * Copyright (C) 2026 FoE-Helper team - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the AGPL license.
  *
@@ -59,12 +59,6 @@ FoEproxy.addHandler('AnnouncementsService', 'fetchAllAnnouncements', (data, post
 FoEproxy.addHandler('CampaignService', 'start', (data, postData) => {
        
     betterMusic.setScene("map");
-    
-});
-
-FoEproxy.addHandler('ClanBattleService', 'all', (data, postData) => {
-       
-    betterMusic.setScene("gvg");
     
 });
 
@@ -190,7 +184,8 @@ let betterMusic = {
                 "foe_music_jupiter_moon_city": true,
                 "foe_music_tavern": true,
                 "foe_music_stpatricks_v2": true,
-                "foe_music_anniversary": true
+                "foe_music_anniversary": true,
+                "foe_music_history":true
             },
             "settlement": {
                 "foe_music_expedition": true,
@@ -200,7 +195,8 @@ let betterMusic = {
                 "foe_music_japanese": true,
                 "foe_music_egyptians": true,
                 "foe_music_aztecs": true,
-                "foe_music_mughals": true
+                "foe_music_mughals": true,
+                "foe_music_polynesia":true
             },
             "colony": {
                 "foe_music_mars": true,
@@ -213,18 +209,15 @@ let betterMusic = {
                 "foe_music_wildlife": true,
                 "foe_music_archeology": true,
                 "foe_music_aztecs": true,
-                "foe_music_mughals": true
+                "foe_music_mughals": true,
+                "foe_music_polynesia":true
             },
             "gbg": {
                 "foe_music_expedition": true,
                 "foe_music_battlegrounds": true,
                 "foe_music_pvp_arena": true,
-                "FoE_BattleTheme_Vs1": true
-            },
-            "gvg": {
-                "foe_music_battlegrounds": true,
-                "foe_music_pvp_arena": true,
-                "FoE_BattleTheme_Vs1": true
+                "FoE_BattleTheme_Vs1": true,
+                "foe_music_polynesia":true
             },
             "battle": {
                 "foe_music_battlegrounds": true,
@@ -256,7 +249,6 @@ let betterMusic = {
         "colony":{Name: i18n('Boxes.BetterMusic.Colony'), TitleList: []},
         "ge":{Name: i18n('Boxes.BetterMusic.GE'), TitleList: []},
         "gbg":{Name: i18n('Boxes.BetterMusic.GBG'), TitleList: []},
-        "gvg":{Name: i18n('Boxes.BetterMusic.GvG'), TitleList: []},
         "battle":{Name: i18n('Boxes.BetterMusic.Battle'), TitleList: []},
         "map":{Name: i18n('Boxes.BetterMusic.Map'), TitleList: []},
     },
@@ -273,6 +265,7 @@ let betterMusic = {
         "foe_music_jupiter_moon_city": {Volume:1, Name:"Space Age Jupiter Moon", Age:21, Agelimit: 21},
         "foe_music_jupiter_moon": {Volume:1, Name:"Space Age Jupiter Moon (Colony)", Age:21, Agelimit: 22, Outpost: true},
         "foe_music_titan": {Volume:1, Name:"Space Age Titan", Age:22, Agelimit: 22},
+        "foe_music_space_hub": {Volume:1, Name:"Space Age Space Hub", Age:23, Agelimit: 23},
         "foe_music_tavern": {Volume:.7, Name:"Tavern"},
         "foe_music_expedition": {Volume:.7, Name:"Guild Expedition"},
         "foe_music_battlegrounds": {Volume:.7, Name:"Guild Battlegrounds"},
@@ -284,15 +277,20 @@ let betterMusic = {
         "foe_music_wildlife": {Volume:.6, Name:"Wildlife Event", Event:"wildlife_event"},
         "foe_music_archeology": {Volume:.6, Name:"Archaeology  Event", Event:"archeology_event"},
         "foe_music_hero": {Volume:.6, Name:"Fellowship Event 22", Event:"hero_event"},
-        "foe_music_fellowship": {Volume:1, Name:"Fellowship Event 23", Event:"fellowship_event"},
+        "cup23_background_music": {Volume:.6, Name:"Soccer Event", Event:"soccer_event"},
+        "foe_music_fellowship": {Volume:.6, Name:"Fellowship Event 23", Event:"fellowship_event"},
+        "foe_music_history": {Volume:.6, Name:"History Event", Event:"history_event"},
+        "foe_music_care": {Volume:.6, Name:"Care Event", Event:"care_event"},
         "foe_music_summer": {Volume:.7, Name:"Summer Event", Event:"summer_event"},
+        "foe_music_fall": {Volume:.7, Name:"Fall Event", Event:"fall_event"},
         "foe_music_halloween": {Volume:.6, Name:"Halloween Event", Event:"halloween_event"},
         "foe_music_winter": {Volume:.6, Name:"Winter Event", Event:"winter_event"},
         "foe_music_vikings": {Volume:1, Name:"Viking Settlement", Settlement:"vikings"},
         "foe_music_japanese": {Volume:1, Name:"Japanese Settlement", Settlement:"japanese"},
         "foe_music_egyptians": {Volume:1, Name:"Egypt Settlement", Settlement:"egyptians"},
         "foe_music_aztecs": {Volume:1, Name:"Aztec Settlement", Settlement:"aztecs"},
-        "foe_music_mughals": {Volume:1, Name:"Mughal Settlement", Settlement:"mughals"}
+        "foe_music_mughals": {Volume:1, Name:"Mughal Settlement", Settlement:"mughals"},
+        "foe_music_polynesia": {Volume:1, Name:"Polynesia Settlement", Settlement:"polynesia"},
     },
 
     
@@ -329,12 +327,12 @@ let betterMusic = {
         htmltext += `</div>`;
         htmltext += `</div>`;
 
-        htmltext += `<table id="musicSettingsScenesX" class="foe-table"><caption style="font-weight: bold; font-size: initial; padding-top: 10px;">${i18n('Boxes.BetterMusic.Scenes')}</caption><tr><th>${i18n('Boxes.BetterMusic.TitleName')}</th>`;
+        htmltext += `<table id="musicSettingsScenesX" class="foe-table"><caption style="font-weight: bold; font-size: initial; padding-top: 10px;">${i18n('Boxes.BetterMusic.Scenes')}</caption><thead class="sticky">><tr><th>${i18n('Boxes.BetterMusic.TitleName')}</th>`;
         
         for (let scene in betterMusic.Scenes) {
             htmltext += `<th><span>${betterMusic.Scenes[scene].Name}</span></th>`;
         }
-        htmltext += `</tr>`;
+        htmltext += `</tr></thead>`;
         
         for (let title in betterMusic.PossibleTracks) {
             htmltext += `<tr><td class="betterMusicTitle" onclick="betterMusic.switchTrack('${title}', 0)" onmouseout="betterMusic.pause(event)">${betterMusic.PossibleTracks[title].Name}</td>`;
@@ -498,8 +496,12 @@ let betterMusic = {
     loadSettings: ()=> {
 
 		tempSettings = JSON.parse(localStorage.getItem('betterMusicSettings') || '{}');
+        if (tempSettings.Scenes) {
+            for (let i of Object.keys(tempSettings.Scenes)) {
+                if (!betterMusic.Settings.Scenes[i]) delete tempSettings.Scenes[i];
+            }
+        }
         betterMusic.Settings = betterMusic.update(betterMusic.Settings,tempSettings);
-
     },
     
     saveSettings: ()=> {

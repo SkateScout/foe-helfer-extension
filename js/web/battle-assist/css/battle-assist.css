@@ -1,6 +1,6 @@
 /*
  * **************************************************************************************
- * Copyright (C) 2022 FoE-Helper team - All Rights Reserved
+ * Copyright (C) 2026 FoE-Helper team - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the AGPL license.
  *
@@ -28,23 +28,16 @@
     align-items: center;
     text-align: center;
     font-size: 120%;
-    background-color: rgba(103, 1, 1, 0.5);
+    background-color: var(--table-bg-error);
 }
 
 #battleAssistRogueDialog {
-    top: calc(50vh + 230px);
-    left: calc(50vw - 92px);
+    top: calc(50vh + 240px);
+    left: calc(50vw - 270px);
 }
 
 #battleAssistRogueDialogBody {
     width: 360px;
-    height: 100px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-size: 120%;
-	background-color: rgba(103, 1, 1, 0.5);
 }
 
 #battleAssistRogueDialogBody,
@@ -53,28 +46,48 @@
 }
 
 @keyframes battleAssistBlink {
-    0% {color: #fafa6c;}
-    25% {color: #fcfcb2;}
-    50% {color: transparent;}
-    75% {color: #fcfcb2;}
-    100% {color: #fafa6c;}
+    0% {color: var(--sunflower);}
+    50% {color: var(--beige);}
+    100% {color: var(--sunflower);}
 }
 
 #battleAssistAddAdvice {
-    top: 50px;
-    left: calc(50vw - 50px);
-    width: 100px;
-    height: 100px;
+    top: calc(50vh - 299px);
+    left: calc(50vw + 115px);
+    width: 120px;
+    height: 34px;
+}
+
+#battleAssistAddAdviceHeader {
+    background: none;
+    border-bottom-width: 0;
+    box-shadow: none;
+    justify-content: right;
+}
+
+#battleAssistAddAdviceHeader .title {
+    display: none;
+}
+
+#battleAssistAddAdviceHeader .box-buttons {
+    z-index: 1001;
 }
 #battleAssistAddAdviceBody {
-    color: #000;
-    background: orange;
-    font-weight: 300;
+    background: var(--btn-bg);
     display: flex;
     justify-content: center;
     flex-direction: column;
-    text-align: center;
+    box-sizing: border-box;
+    padding: 0.2rem 0.4rem;
+    position: relative;
+    top: -34px;
+    height: 34px;
+    border-radius: 3px;
 }
+#battleAssistAddAdviceBody:hover {
+    background: var(--btn-bg-active);
+}
+
 #battleAssistArmyAdvice {
     top: calc(50vh - 269px);
     left: calc(50vw - 258px);
@@ -84,11 +97,15 @@
 }
 #battleAssistArmyAdviceBody {
     background: 5px;
-    color: #000;
-    background-color: orange;
+    color: var(--black);
+    background-color: var(--sunflower);
 }
 #battleAssistArmyAdviceBody span {
     margin-left: 5px;
+}
+
+#battleAssistAAConfig {
+    height: 60vh;
 }
 
 #battleAssistAAConfig .BattleWave {
@@ -101,7 +118,7 @@
 }
 
 #battleAssistAAConfig .BattleWave img {
-    border: 1px #000 solid;
+    border: 1px var(--black) solid;
     height: 35px;
 }
 
@@ -109,7 +126,7 @@
     overflow-y: auto;
 }
 #battleAssistAAConfig .explanation {
-    color: var(--text-bright);
+    color: var(--sunflower);
     margin: 3px;
     border: solid 1px;
     border-radius: 4px;
@@ -121,7 +138,7 @@
     float:right;
 }
 #battleAssistAAConfig h1 {
-    color: var(--text-bright);
+    color: var(--sunflower);
     margin-left: 5px;
 }
 #battleAssistAAConfigSettingsBox input{
@@ -138,6 +155,26 @@
 
 .AASetAdvice {
     width:300px;
+    position: relative;
+}
+.battleAssistOverrideTypeGroup {
+    display: none;
+    position: absolute;
+    top: 0px;
+    width: 25px;
+    right: 0px;
+}
+.battleAssistOverrideTypeGroup img{
+    width: 100%;
+}
+.battleAssistOverrideType img{
+    opacity: 50%;
+}
+.battleAssistOverrideType.active img{
+    opacity: 100%;
+}
+#battleAssistAAConfigBody table td:hover .battleAssistOverrideTypeGroup {
+    display:block;
 }
 
 .AASetBonus {
@@ -154,6 +191,9 @@
     min-width:300px;
 }
 
-#battleAssistAAConfigBody [data-id^="GE5"] {
-    background: var(--background-table-info);
+#battleAssistAAConfigBody [data-id^="attack%"] {
+    background: var(--table-bg-error);
+}
+#battleAssistAAConfigBody [data-id^="defense%"] {
+    background: var(--table-bg-info);
 }

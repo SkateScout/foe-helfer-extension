@@ -1,7 +1,7 @@
 /*
  * *************************************************************************************
  *
- * Copyright (C) 2023 FoE-Helper team - All Rights Reserved
+ * Copyright (C) 2026 FoE-Helper team - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the AGPL license.
  *
@@ -14,11 +14,9 @@
 
 let srcLinks = {
     FileList: null,
+    raw:null,
 
     init: async () => {
-        //clear storage - can be removed down the line
-        localStorage.removeItem('PortraitsFileList')
-
         // wait for ForgeHX is loaded, then read the full script url
         const isElementLoaded = async name => {
             while ( document.querySelector('script[src*="' + name + '"]') === null) {
@@ -33,29 +31,55 @@ let srcLinks = {
         xhr.open("GET", script.src)
         xhr.onreadystatechange = function () {
             if(xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                srcLinks.readHX(xhr.responseText);
+                srcLinks.raw = xhr.responseText;
+                srcLinks.readHX();
             }
         };
         xhr.send();
     },
 
-    readHX: (HXscript) => {
+
+    readHX: () => {
+        let HXscript = srcLinks.raw+"";
         let startString = "baseUrl,";
         let start = HXscript.indexOf(startString) + startString.length;
+
         HXscript = HXscript.substring(start);
+
         let end = HXscript.indexOf("}")+1;
         HXscript = HXscript.substring(0, end);
+
         try {
             srcLinks.FileList = JSON.parse(HXscript);
-        } 
+
+            const lastSent = localStorage.getItem('sendListLastDate');
+            const now = Date.now();
+            const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000; // 7 Tage Cooldown
+
+            // 1. Has this player already sent a message in the last 7 days?
+            if (!lastSent || (now - parseInt(lastSent, 10)) > SEVEN_DAYS) {
+                // 2. Random roll with a probability of 0.5% (0.005)
+                if (Math.random() < 0.005) {
+                    MainParser.sendExtMessage({
+                        type: 'send2Api',
+                        url: `${ApiURL}BuildingList/?world=${ExtWorld}&v=${extVersion}`,
+                        data: JSON.stringify(srcLinks.FileList)
+                    });
+
+                    localStorage.setItem('sendListLastDate', now.toString());
+                }
+            }
+        }
         catch {
             console.log("parsing of ForgeHX failed");
         }
     },
 
+
     get: (filename, full = false, noerror = false) => {
         let CS = undefined;
-        let CSfilename = filename.substring(0,filename.length-4);
+        let filenameP = filename.split(".");
+        let CSfilename = filenameP[0]
         
         if (!srcLinks.FileList) {
             if (!noerror) console.log ("Source file list not loaded!");
@@ -63,11 +87,16 @@ let srcLinks = {
         else {
             CS = srcLinks.FileList[filename];
             if (!CS) {
-                if (!noerror) console.log (`file "${filename}" not in List`);
+                if (!noerror) {
+                    console.log(`file "${filename}" not in List`);
+                }
+                CSfilename = "/city/gui/citymap_icons/antiquedealer_flag";    //plunder_robber
+                filenameP[1]="png";
+                CS=srcLinks.FileList["/city/gui/citymap_icons/antiquedealer_flag.png"];
             }
         }
         
-        CSfilename += "-" + CS + filename.substring(filename.length-4);
+        CSfilename += "-" + CS + "." + filenameP[1];
         
         if (full){
             return MainParser.InnoCDN + 'assets' + CSfilename;
@@ -75,22 +104,65 @@ let srcLinks = {
         return CSfilename;
     },
 
+
     GetPortrait: (id)=> {
         let file = MainParser.PlayerPortraits[id] || 'portrait_433';
 
         return srcLinks.get('/shared/avatars/' + file + '.jpg', true);
     },
 
+
     getReward:(icon) => {
-        let url1 = srcLinks.get(`/shared/icons/reward_icons/reward_icon_${icon}.png`,true, true);
-        let url2 = srcLinks.get(`/shared/icons/goods_large/${icon}.png`,true, true);
+        let url=""
+        if (icon.substring(1, 2) === "_") {
+            url = srcLinks.get(`/city/buildings/${MainParser.CityEntities?.[icon]?.asset_id?.replace(/(\D*?)_(.*)/,"$1_SS_$2")}.png`,true);
+        } else if (url==""|| url.indexOf("antiquedealer_flag") > -1) 
+            url = srcLinks.get(`/shared/unit_portraits/armyuniticons_90x90/armyuniticons_90x90_${icon}.jpg`,true, true) // does not work :(
+
+        if (url.indexOf("antiquedealer_flag") > -1) 
+            url = srcLinks.get(`/shared/icons/goods_large/${icon}.png`,true, true)
+        if (url.indexOf("antiquedealer_flag") > -1) 
+            url = srcLinks.get(`/shared/icons/reward_icons/reward_icon_${icon}.png`,true, true)
+        if (url.indexOf("antiquedealer_flag") > -1) 
+            url = srcLinks.get(`/city/buildings/${icon?.replace(/(\D*?)_(.*)/,"$1_SS_$2")}.png`,true);
+
+        return url;
+    },
+
+
+    getQuest:(icon) => {
+        let url1 = srcLinks.get(`/shared/icons/quest_icons/${icon}.png`,true, true);
+        let url2 = srcLinks.get(`/shared/icons/${icon}.png`,true, true);
         
-        if (url2.indexOf("undefined") > -1) {
-            return url1;
+        if (url1.indexOf("antiquedealer_flag") > -1) {
+            return url2;
         }
 
-        return url2;
+        return url1;
+    },
+
+
+    icons: (x) => {
+        if (!x) return ""
+        let link = srcLinks.get(`/shared/icons/${x}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/shared/gui/upgrade/upgrade_icon_${x}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/shared/icons/${x.replace(/(.*?)_[0-9]+/gm,"$1")}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/shared/icons/goods/icon_fine_${x}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/shared/icons/reward_icons/reward_icon_${x}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/shared/icons/reward_icons/reward_icon_${x.replace(/(.*?)_[0-9]+/gm,"$1")}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/city/buildings/${x.replace(/(\D*?)_(.*)/,"$1_SS_$2")}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/city/buildings/${x.replace(/(.*?)_[0-9]+/gm,"$1").replace(/(\D*?)_(.*)/,"$1_SS_$2")}.png`,true,true);
+        if (link.includes("antiquedealer_flag")) link = srcLinks.get(`/city/buildings/${MainParser.CityEntities?.[x]?.asset_id?.replace(/(\D*?)_(.*)/,"$1_SS_$2")}.png`,true);
+        return `<img src=${link} alt="">`;
+    },
+
+
+    regEx: (regEx)=>{
+        file = Object.keys(srcLinks.FileList).find(x=>regEx.test(x))
+        let link = srcLinks.get(file,true,true);
+        return `<img src=${link} alt="">`;
     }
+
 }
 
 srcLinks.init()
